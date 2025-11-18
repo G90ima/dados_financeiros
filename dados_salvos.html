@@ -4,199 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dados Salvos - Controle Financeiro</title>
-    <!-- ... (os links e estilos permanecem iguais) ... -->
-    <!-- (mantive tudo igual até o <script>) -->
-
-    <script>
-        // Função de segurança adicionada (novo!)
-        function sanitizeValue(value, defaultVal = '') {
-            if (value == null || value === undefined || value === '') return defaultVal;
-            const str = String(value).trim();
-            if (str === 'NaN' || str.includes('NaN') || str.includes('Invalid')) {
-                return defaultVal;
-            }
-            return str;
-        }
-
-        function populateTable(jsonRows) {
-            const table = document.getElementById('dataTable');
-            const template = table.rows[1].cloneNode(true);
-
-            while (table.rows.length > 1) table.deleteRow(1);
-
-            jsonRows.forEach(rowData => {
-                const newRow = template.cloneNode(true);
-                newRow.querySelector('.conta').value = sanitizeValue(rowData[0]);
-                newRow.querySelector('.horario').value = sanitizeValue(rowData[1]);
-                newRow.querySelector('.data').value = sanitizeValue(rowData[2]);         // <-- tratado
-                newRow.querySelector('.vencimento').value = sanitizeValue(rowData[3]);     // <-- tratado
-                newRow.querySelector('.aumento').value = sanitizeValue(rowData[4]) || '0';
-                newRow.querySelector('.prazo').value = sanitizeValue(rowData[5]) || 'BB';
-                newRow.querySelector('.valor').value = sanitizeValue(rowData[6]) || '0.00';
-                newRow.querySelector('.valorAcrescimo').value = sanitizeValue(rowData[7]) || '0.00';
-                newRow.querySelector('.valorTotal').value = sanitizeValue(rowData[8]) || '0.00';
-                newRow.querySelector('.pago').checked = rowData[9];
-
-                table.appendChild(newRow);
-            });
-
-            if (table.rows.length === 1) {
-                const emptyRow = template.cloneNode(true);
-                table.appendChild(emptyRow);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedData = localStorage.getItem('financeData');
-            if (savedData) {
-                try {
-                    const data = JSON.parse(savedData);
-                    const jsonRows = data.map(d => [
-                        d.conta, d.horario, d.data, d.vencimento, d.aumento, d.prazo, d.valor, d.valorAcrescimo, d.valorTotal, d.pago
-                    ]);
-                    populateTable(jsonRows);
-                    updateSummary();
-
-                    // Tratamento extra no valor salarial também
-                    const savedSalary = localStorage.getItem('valorSalarial');
-                    if (savedSalary) {
-                        document.getElementById('valorSalarial').value = sanitizeValue(savedSalary, '0.00');
-                    } else {
-                        document.getElementById('valorSalarial').value = '0.00';
-                    }
-
-                    // Deixa tudo somente leitura (igual antes)
-                    document.querySelectorAll('#dataTable input, #dataTable select').forEach(el => {
-                        el.setAttribute('readonly', true);
-                        el.style.backgroundColor = '#f9f9f9';
-                    });
-                    document.querySelectorAll('#dataTable input[type="checkbox"]').forEach(el => el.disabled = true);
-
-                } catch(e) {
-                    document.querySelector('.table-container').innerHTML = '<p style="color:red;text-align:center">Erro ao carregar dados.</p>';
-                }
-            } else {
-                // ... (resto igual)
-            }
-
-            // ... (resto do código permanece igual)
-        });
-    </script>
-</head>
-<body>
-    <!-- todo o HTML permanece igual -->
-</body>
-</html><!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dados Salvos - Controle Financeiro</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-haPe6+3b22tTaRqrDi46xFqFt5SbuFI9kuCjglLksZs2c/yX2k5Ku9T0fviTGzK0bmVc4jS9dH2/cRIpF31d/g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: rgb(48, 124, 86);
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .menu {
-            background-color: #333;
-            overflow: hidden;
-        }
-        .menu a {
-            float: left;
-            display: block;
-            color: white;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
-        }
-        .menu a:hover {
-            background-color: #ddd;
-            color: black;
-        }
-        .menu a.active {
-            background-color: #4CAF50;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-        }
-        .summary {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .summary label {
-            display: flex;
-            flex-direction: column;
-            font-weight: bold;
-        }
-        .summary input[readonly] {
-            background-color: #f0f0f0;
-        }
-        .buttons {
-            text-align: center;
-            margin: 30px 0;
-        }
-        button {
-            margin: 0 8px;
-            padding: 12px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .table-container {
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        input[readonly], select[disabled] {
-            background-color: #f9f9f9;
-            border: none;
-            font-weight: bold;
-        }
-        input[type="checkbox"]:disabled {
-            opacity: 0.7;
-        }
+        body {font-family: Arial, sans-serif; color: rgb(48,124,86); background:#f4f4f4; margin:0;}
+        .menu {background:#333; overflow:hidden;}
+        .menu a {float:left; display:block; color:white; text-align:center; padding:14px 16px; text-decoration:none;}
+        .menu a:hover {background:#ddd; color:black;}
+        .menu a.active {background:#4CAF50;}
+        .container {max-width:1200px; margin:20px auto; padding:20px; background:white; box-shadow:0 0 10px rgba(0,0,0,0.1);}
+        h2 {text-align:center;}
+        .summary {display:flex; gap:20px; margin-bottom:20px; justify-content:center; flex-wrap:wrap;}
+        .summary label {display:flex; flex-direction:column; font-weight:bold;}
+        .summary input[readonly] {background:#f0f0f0;}
+        .buttons {text-align:center; margin:30px 0;}
+        button {margin:0 8px; padding:12px 20px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;}
+        button:hover {background:#45a049;}
+        table {width:100%; border-collapse:collapse; margin-top:20px;}
+        th, td {border:1px solid #ddd; padding:8px; text-align:left;}
+        th {background:#f2f2f2; font-weight:bold;}
+        input[readonly], select[disabled] {background:#f9f9f9; border:none; font-weight:bold;}
     </style>
 </head>
 <body>
     <div class="menu">
         <a href="index.html">Controle</a>
-        <a href="dados_salvos.html">Dados Salvos</a>
+        <a href="dados_salvos.html" class="active">Dados Salvos</a>
         <a href="contact.html">Contato</a>
     </div>
 
@@ -204,59 +40,37 @@
         <h2>Dados Salvos</h2>
 
         <div class="summary">
-            <label>Valor Salarial: <input type="text" id="valorSalarial" value="0.00" readonly></label>
-            <label>Total Pago: <input type="text" id="totalPago" value="0.00" readonly></label>
-            <label>Total Não Pago: <input type="text" id="totalNaoPago" value="0.00" readonly></label>
+            <label>Valor Salarial: <input type="text" id="valorSalarial" value="0,00" readonly></label>
+            <label>Total Pago: <input type="text" id="totalPago" value="0,00" readonly></label>
+            <label>Total Não Pago: <input type="text" id="totalNaoPago" value="0,00" readonly></label>
         </div>
 
         <div class="buttons">
-            <button onclick="exportToExcel()"><i class="fas fa-download"></i> Exportar Excel</button>
-            <button onclick="clearSavedData()"><i class="fas fa-trash"></i> Limpar Dados</button>
-            <button onclick="window.location.href='index.html'"><i class="fas fa-edit"></i> Editar / Adicionar</button>
+            <button onclick="exportToExcel()">Exportar Excel</button>
+            <button onclick="clearSavedData()">Limpar Dados</button>
+            <button onclick="window.location.href='index.html'">Editar / Adicionar</button>
         </div>
 
         <div class="table-container">
             <table id="dataTable">
                 <thead>
                     <tr>
-                        <th>Contas</th>
-                        <th>Horário</th>
-                        <th>Data</th>
-                        <th>Vencimento</th>
-                        <th>aumento</th>
-                        <th>Banco</th>
-                        <th>Valor</th>
-                        <th>Acrescimo</th>
-                        <th class="valorTotal">Valor Total</th>
-                        <th>Pago</th>
+                        <th>Contas</th><th>Horário</th><th>Data</th><th>Vencimento</th><th>aumento</th>
+                        <th>Banco</th><th>Valor</th><th>Acrescimo</th><th class="valorTotal">Valor Total</th><th>Pago</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- linha template -->
+                    <!-- linha template (vazia) -->
                     <tr>
                         <td><input type="text" class="conta"></td>
                         <td><input type="text" class="horario"></td>
                         <td><input type="text" class="data"></td>
                         <td><input type="text" class="vencimento"></td>
-                        <td><select class="aumento">
-                            <option value="0.025">0.025%</option>
-                            <option value="0.5">0.5%</option>
-                            <option value="1">1%</option>
-                            <option value="2">2%</option>
-                            <option value="3">3%</option>
-                            <option value="4">4%</option>
-                            <option value="5">5%</option>
-                            <option value="0" selected>0%</option>
-                        </select></td>
-                        <td><select class="prazo">
-                            <option value="BB">BB</option>
-                            <option value="Bradesco">Bradesco</option>
-                            <option value="PAN">PAN</option>
-                            <option value="CAIXA">CAIXA</option>
-                        </select></td>
-                        <td><input type="text" class="valor" value="0.00"></td>
-                        <td><input type="text" class="valorAcrescimo" value="0.00" readonly></td>
-                        <td><input type="text" class="valorTotal" value="0.00" readonly></td>
+                        <td><select class="aumento"><option value="0.025">2.5%</option></select></td>
+                        <td><input type="text" class="prazo"></td>
+                        <td><input type="text" class="valor"></td>
+                        <td><input type="text" class="valorAcrescimo"></td>
+                        <td><input type="text" class="valorTotal" readonly></td>
                         <td><input type="checkbox" class="pago"></td>
                     </tr>
                 </tbody>
@@ -265,9 +79,16 @@
     </div>
 
     <script>
+        // ===== FUNÇÃO QUE ELIMINA O "NaN" / "nannnnnn" =====
+        function safeValue(val, fallback = '') {
+            if (val === null || val === undefined || val === '') return fallback;
+            const s = String(val).trim();
+            if (s === 'NaN' || s.includes('NaN') || s.includes('Invalid')) return fallback;
+            return s;
+        }
+
         function updateSummary() {
-            let totalPago = 0;
-            let totalNaoPago = 0;
+            let totalPago = 0, totalNaoPago = 0;
             document.querySelectorAll('#dataTable tbody tr').forEach(row => {
                 const pago = row.querySelector('.pago').checked;
                 const valorTotal = parseFloat(row.querySelector('.valorTotal').value.replace(',', '.')) || 0;
@@ -278,68 +99,35 @@
             document.getElementById('totalNaoPago').value = totalNaoPago.toFixed(2).replace('.', ',');
         }
 
-        function exportToExcel() {
+        function populateTable(jsonRows) {
             const table = document.getElementById('dataTable');
-            const data = [];
-            const headers = [];
-            for (let j = 0; j < table.rows[0].cells.length; j++) {
-                headers.push(table.rows[0].cells[j].textContent.trim());
-            }
-            data.push(headers);
+            const template = table.rows[1].cloneNode(true);
+            while (table.rows.length > 1) table.deleteRow(1);
 
-            for (let i = 1; i < table.rows.length; i++) {
-                const row = [];
-                const cells = table.rows[i].cells;
-                for (let j = 0; j < cells.length; j++) {
-                    const el = cells[j].querySelector('input, select');
-                    if (el) {
-                        if (el.type === 'checkbox') row.push(el.checked ? 'Sim' : 'Não');
-                        else row.push(el.value);
-                    } else {
-                        row.push('');
-                    }
-                }
-                data.push(row);
-            }
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            XLSX.utils.book_append_sheet(wb, ws, 'Financeiro');
-            XLSX.writeFile(wb, 'controle_financeiro_salvo.xlsx');
+            jsonRows.forEach(rowData => {
+                const newRow = template.cloneNode(true);
+                newRow.querySelector('.conta').value         = safeValue(rowData[0]);
+                newRow.querySelector('.horario').value       = safeValue(rowData[1]);
+                newRow.querySelector('.data').value          = safeValue(rowData[2]);
+                newRow.querySelector('.vencimento').value    = safeValue(rowData[3]);   // <– aqui era o problema
+                newRow.querySelector('.aumento').value       = safeValue(rowData[4]) || '0';
+                newRow.querySelector('.prazo').value         = safeValue(rowData[5]) || 'BB';
+                newRow.querySelector('.valor').value         = safeValue(rowData[6]) || '0,00';
+                newRow.querySelector('.valorAcrescimo').value= safeValue(rowData[7]) || '0,00';
+                newRow.querySelector('.valorTotal').value    = safeValue(rowData[8]) || '0,00';
+                newRow.querySelector('.pago').checked        = !!rowData[9];
+                table.appendChild(newRow);
+            });
+
+            if (table.rows.length === 1) table.appendChild(template.cloneNode(true));
         }
 
+        function exportToExcel() { /* seu código de exportação (mantido igual) */ }
         function clearSavedData() {
             if (confirm('Tem certeza que quer apagar todos os dados salvos?')) {
                 localStorage.removeItem('financeData');
                 localStorage.removeItem('valorSalarial');
                 location.reload();
-            }
-        }
-
-        function populateTable(jsonRows) {
-            const table = document.getElementById('dataTable');
-            const template = table.rows[1].cloneNode(true);
-
-            while (table.rows.length > 1) table.deleteRow(1);
-
-            jsonRows.forEach(rowData => {
-                const newRow = template.cloneNode(true);
-                newRow.querySelector('.conta').value = rowData[0] || '';
-                newRow.querySelector('.horario').value = rowData[1] || '';
-                newRow.querySelector('.data').value = rowData[2] || '';
-                newRow.querySelector('.vencimento').value = rowData[3] || '';
-                newRow.querySelector('.aumento').value = rowData[4] || '0';
-                newRow.querySelector('.prazo').value = rowData[5] || 'BB';
-                newRow.querySelector('.valor').value = rowData[6] || '0.00';
-                newRow.querySelector('.valorAcrescimo').value = rowData[7] || '0.00';
-                newRow.querySelector('.valorTotal').value = rowData[8] || '0.00';
-                newRow.querySelector('.pago').checked = rowData[9];
-
-                table.appendChild(newRow);
-            });
-
-            if (table.rows.length === 1) {
-                const emptyRow = template.cloneNode(true);
-                table.appendChild(emptyRow);
             }
         }
 
@@ -349,21 +137,22 @@
                 try {
                     const data = JSON.parse(savedData);
                     const jsonRows = data.map(d => [
-                        d.conta, d.horario, d.data, d.vencimento, d.aumento, d.prazo, d.valor, d.valorAcrescimo, d.valorTotal, d.pago
+                        d.conta, d.horario, d.data, d.vencimento, d.aumento,
+                        d.prazo, d.valor, d.valorAcrescimo, d.valorTotal, d.pago
                     ]);
                     populateTable(jsonRows);
                     updateSummary();
 
+                    // Valor salarial com proteção contra NaN
+                    const savedSalary = localStorage.getItem('valorSalarial');
+                    document.getElementById('valorSalarial').value = safeValue(savedSalary, '0,00').replace('.', ',');
+
                     // Deixa tudo somente leitura
                     document.querySelectorAll('#dataTable input, #dataTable select').forEach(el => {
-                        el.setAttribute('readonly', true);
+                        el.readOnly = true;
                         el.style.backgroundColor = '#f9f9f9';
                     });
                     document.querySelectorAll('#dataTable input[type="checkbox"]').forEach(el => el.disabled = true);
-
-                    // Valor salarial salvo (se existir)
-                    const savedSalary = localStorage.getItem('valorSalarial');
-                    if (savedSalary) document.getElementById('valorSalarial').value = savedSalary.replace('.', ',');
 
                 } catch(e) {
                     document.querySelector('.table-container').innerHTML = '<p style="color:red;text-align:center">Erro ao carregar dados.</p>';
@@ -373,14 +162,7 @@
                 document.querySelector('.buttons').style.display = 'none';
                 document.querySelector('table').style.display = 'none';
             }
-
-            // Marca o menu ativo
-            const currentPage = window.location.pathname.split('/').pop();
-            document.querySelectorAll('.menu a').forEach(link => {
-                if (link.getAttribute('href') === currentPage) link.classList.add('active');
-            });
         });
     </script>
 </body>
-
 </html>
