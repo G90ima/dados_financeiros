@@ -322,30 +322,40 @@
         }
 
         function populateTable(jsonRows) {
-            var table = document.getElementById('dataTable');
-            // Salvar template (primeira linha de dados)
-            var template = table.rows[1].cloneNode(true);
-            // Limpar linhas de dados
-            while (table.rows.length > 1) {
-                table.deleteRow(1);
-            }
-            // Adicionar linhas de dados
-            jsonRows.forEach(function (rowData) {
-                var newRow = template.cloneNode(true);
-                newRow.querySelector('.conta').value = rowData[0] || '';
-                newRow.querySelector('.horario').value = rowData[1] || '';
-                newRow.querySelector('.data').value = rowData[2] || '';
-                newRow.querySelector('.vencimento').value = rowData[3] || '';
-                newRow.querySelector('.aumento').value = rowData[4] || '0';
-                newRow.querySelector('.prazo').value = rowData[5] || 'Bradesco';
-                newRow.querySelector('.valor').value = rowData[6] || '0.00';
-                newRow.querySelector('.valorAcrescimo').value = rowData[7] || '0.00';
-                newRow.querySelector('.valorTotal').value = rowData[8] || '0.00';
-                var paidValue = rowData[9];
-                newRow.querySelector('.pago').checked = (paidValue === true || paidValue === 'Sim' || paidValue === 'true' || paidValue === 1);
-                table.appendChild(newRow);
-                calculateTotal(newRow.querySelector('.valor'));
-            });
+    const table = document.getElementById('dataTable');
+    const template = table.rows[1].cloneNode(true);
+    while (table.rows.length > 1) table.deleteRow(1);
+
+    jsonRows.forEach(rowData => {
+        const newRow = template.cloneNode(true);
+        newRow.querySelector('.conta').value         = safeValue(rowData[0]);
+        newRow.querySelector('.horario').value       = safeValue(rowData[1]);
+        newRow.querySelector('.data').value          = safeValue(rowData[2]);
+        newRow.querySelector('.vencimento').value    = safeValue(rowData[3]);   // <– protegido
+        newRow.querySelector('.aumento').value       = safeValue(rowData[4]) || '0';
+        newRow.querySelector('.prazo').value         = safeValue(rowData[5]) || 'Bradesco';
+        newRow.querySelector('.valor').value         = safeValue(rowData[6]) || '0,00';
+        newRow.querySelector('.valorAcrescimo').value= safeValue(rowData[7]) || '0,00';
+        newRow.querySelector('.valorTotal').value    = safeValue(rowData[8]) || '0,00';
+        newRow.querySelector('.pago').checked        = !!rowData[9];
+        table.appendChild(newRow);
+        calculateTotal(newRow.querySelector('.valor'));
+    });
+
+    if (table.rows.length === 1) {
+        const emptyRow = template.cloneNode(true);
+        table.appendChild(emptyRow);
+    }
+    updateSummary();
+}
+
+// Função de segurança (coloque lá no <script> do Index.html também)
+function safeValue(val, fallback = '') {
+    if (val === null || val === undefined || val === '') return fallback;
+    const s = String(val).trim();
+    if (s === 'NaN' || s.includes('NaN') || s.includes('Invalid')) return fallback;
+    return s;
+}
             // Se não houver dados, adicionar uma linha vazia
             if (table.rows.length === 1) {
                 var emptyRow = template.cloneNode(true);
@@ -403,3 +413,4 @@
     </script>
 </body>
 </html>
+
