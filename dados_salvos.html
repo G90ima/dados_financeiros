@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dados Salvos - Controle Financeiro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {font-family: Arial, sans-serif; color: rgb(48,124,86); background:#f4f4f4; margin:0;}
         .menu {background:#333; overflow:hidden;}
@@ -16,10 +12,10 @@
         .menu a:hover {background:#ddd; color:black;}
         .menu a.active {background:#4CAF50;}
         .container {max-width:1200px; margin:20px auto; padding:20px; background:white; box-shadow:0 0 10px rgba(0,0,0,0.1);}
-        h2 {text-align:center;}
+        h2 {text-align:center; color:rgb(48,124,86);}
         .summary {display:flex; gap:20px; margin-bottom:20px; justify-content:center; flex-wrap:wrap;}
         .summary label {display:flex; flex-direction:column; font-weight:bold;}
-        .summary input[readonly] {background:#f0f0f0;}
+        .summary input[readonly] {background:#f0f0f0; padding:8px; border-radius:4px; font-weight:bold;}
         .buttons {text-align:center; margin:30px 0;}
         button {margin:0 8px; padding:12px 20px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;}
         button:hover {background:#45a049;}
@@ -62,16 +58,16 @@
                 <tbody>
                     <!-- linha template (vazia) -->
                     <tr>
-                        <td><input type="text" class="conta"></td>
-                        <td><input type="text" class="horario"></td>
-                        <td><input type="text" class="data"></td>
-                        <td><input type="text" class="vencimento"></td>
-                        <td><select class="aumento"><option value="0.025">2.5%</option></select></td>
-                        <td><input type="text" class="prazo"></td>
-                        <td><input type="text" class="valor"></td>
-                        <td><input type="text" class="valorAcrescimo"></td>
+                        <td><input type="text" class="conta" readonly></td>
+                        <td><input type="text" class="horario" readonly></td>
+                        <td><input type="text" class="data" readonly></td>
+                        <td><input type="text" class="vencimento" readonly></td>
+                        <td><select class="aumento" disabled><option value="0">0%</option></select></td>
+                        <td><input type="text" class="prazo" readonly></td>
+                        <td><input type="text" class="valor" readonly></td>
+                        <td><input type="text" class="valorAcrescimo" readonly></td>
                         <td><input type="text" class="valorTotal" readonly></td>
-                        <td><input type="checkbox" class="pago"></td>
+                        <td><input type="checkbox" class="pago" disabled></td>
                     </tr>
                 </tbody>
             </table>
@@ -79,19 +75,19 @@
     </div>
 
     <script>
-        // ===== FUNÇÃO QUE ELIMINA O "NaN" / "nannnnnn" =====
+        // FUNÇÃO QUE REMOVE O NaN / nannnnnn / Invalid Date
         function safeValue(val, fallback = '') {
             if (val === null || val === undefined || val === '') return fallback;
             const s = String(val).trim();
-            if (s === 'NaN' || s.includes('NaN') || s.includes('Invalid')) return fallback;
+            if (s === 'NaN' || s.includes('NaN') || s.includes('Invalid') || s === 'undefined') return fallback;
             return s;
         }
 
         function updateSummary() {
             let totalPago = 0, totalNaoPago = 0;
             document.querySelectorAll('#dataTable tbody tr').forEach(row => {
-                const pago = row.querySelector('.pago').checked;
                 const valorTotal = parseFloat(row.querySelector('.valorTotal').value.replace(',', '.')) || 0;
+                const pago = row.querySelector('.pago').checked;
                 if (pago) totalPago += valorTotal;
                 else totalNaoPago += valorTotal;
             });
@@ -106,63 +102,76 @@
 
             jsonRows.forEach(rowData => {
                 const newRow = template.cloneNode(true);
-                newRow.querySelector('.conta').value         = safeValue(rowData[0]);
-                newRow.querySelector('.horario').value       = safeValue(rowData[1]);
-                newRow.querySelector('.data').value          = safeValue(rowData[2]);
-                newRow.querySelector('.vencimento').value    = safeValue(rowData[3]);   // <– aqui era o problema
-                newRow.querySelector('.aumento').value       = safeValue(rowData[4]) || '0';
-                newRow.querySelector('.prazo').value         = safeValue(rowData[5]) || 'BB';
-                newRow.querySelector('.valor').value         = safeValue(rowData[6]) || '0,00';
-                newRow.querySelector('.valorAcrescimo').value= safeValue(rowData[7]) || '0,00';
-                newRow.querySelector('.valorTotal').value    = safeValue(rowData[8]) || '0,00';
-                newRow.querySelector('.pago').checked        = !!rowData[9];
+                newRow.querySelector('.conta').value          = safeValue(rowData[0]);
+                newRow.querySelector('.horario').value        = safeValue(rowData[1]);
+                newRow.querySelector('.data').value           = safeValue(rowData[2]);
+                newRow.querySelector('.vencimento').value     = safeValue(rowData[3]);   // Nunca mais aparece nannnnnn
+                newRow.querySelector('.aumento').value        = safeValue(rowData[4], '0');
+                newRow.querySelector('.prazo').value          = safeValue(rowData[5], 'Bradesco');
+                newRow.querySelector('.valor').value          = safeValue(rowData[6], '0,00');
+                newRow.querySelector('.valorAcrescimo').value = safeValue(rowData[7], '0,00');
+                newRow.querySelector('.valorTotal').value     = safeValue(rowData[8], '0,00');
+                newRow.querySelector('.pago').checked         = !!rowData[9];
                 table.appendChild(newRow);
             });
 
             if (table.rows.length === 1) table.appendChild(template.cloneNode(true));
+            updateSummary();
         }
 
-        function exportToExcel() { /* seu código de exportação (mantido igual) */ }
+        function exportToExcel() {
+            const data = [];
+            const headers = Array.from(document.querySelectorAll('#dataTable thead th')).map(th => th.textContent.trim());
+            data.push(headers);
+
+            document.querySelectorAll('#dataTable tbody tr').forEach(row => {
+                const rowData = [];
+                row.querySelectorAll('input, select').forEach(el => {
+                    rowData.push(el.type === 'checkbox' ? (el.checked ? 'Sim' : 'Não') : el.value);
+                });
+                data.push(rowData);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, 'Financeiro');
+            XLSX.writeFile(wb, 'controle_financeiro_salvo.xlsx');
+        }
+
         function clearSavedData() {
-            if (confirm('Tem certeza que quer apagar todos os dados salvos?')) {
+            if (confirm('Tem certeza que quer apagar TODOS os dados salvos?')) {
                 localStorage.removeItem('financeData');
                 localStorage.removeItem('valorSalarial');
                 location.reload();
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedData = localStorage.getItem('financeData');
-            if (savedData) {
+        // Carrega os dados ao abrir a página
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('financeData');
+            if (saved) {
                 try {
-                    const data = JSON.parse(savedData);
-                    const jsonRows = data.map(d => [
+                    const data = JSON.parse(saved);
+                    const rows = data.map(d => [
                         d.conta, d.horario, d.data, d.vencimento, d.aumento,
                         d.prazo, d.valor, d.valorAcrescimo, d.valorTotal, d.pago
                     ]);
-                    populateTable(jsonRows);
-                    updateSummary();
+                    populateTable(rows);
 
-                    // Valor salarial com proteção contra NaN
-                    const savedSalary = localStorage.getItem('valorSalarial');
-                    document.getElementById('valorSalarial').value = safeValue(savedSalary, '0,00').replace('.', ',');
-
-                    // Deixa tudo somente leitura
-                    document.querySelectorAll('#dataTable input, #dataTable select').forEach(el => {
-                        el.readOnly = true;
-                        el.style.backgroundColor = '#f9f9f9';
-                    });
-                    document.querySelectorAll('#dataTable input[type="checkbox"]').forEach(el => el.disabled = true);
+                    // Valor salarial salvo
+                    const salary = localStorage.getItem('valorSalarial');
+                    document.getElementById('valorSalarial').value = safeValue(salary, '0,00');
 
                 } catch(e) {
-                    document.querySelector('.table-container').innerHTML = '<p style="color:red;text-align:center">Erro ao carregar dados.</p>';
+                    document.querySelector('.table-container').innerHTML = '<p style="color:red; text-align:center;">Erro ao carregar os dados salvos.</p>';
                 }
             } else {
-                document.querySelector('.summary').innerHTML = '<p style="text-align:center">Nenhum dado salvo encontrado.</p>';
+                document.querySelector('.summary').innerHTML = '<p style="text-align:center; color:#666;">Nenhum dado salvo encontrado.</p>';
                 document.querySelector('.buttons').style.display = 'none';
                 document.querySelector('table').style.display = 'none';
             }
         });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
 </html>
